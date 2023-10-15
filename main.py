@@ -2,61 +2,43 @@ import pandas as pd
 import streamlit as st
 import plotly.express as px
 
+#O que eu quero?
+# Lista de companhias aereas no filtro;
+#   Numero de acidentes fatal por companhia de 85 a99 Número de acidentes fatal por companhia de  00 a 14 comparativo
 st.set_page_config(layout="wide")
-st.title("Análise de volume em transação do DOLFUT 2023 a 2021")
+#Projeto de análise de dados de trafego aereo (acidentes, fatalidades..)
 
-#Puxar a base de dados
-df=pd.read_excel("C:\\Users\\arthu\\OneDrive\\Documentos\\Base de dados DOLFUT 2023 a 2021.xlsx")
+st.title ("Projeto de análise de dados de trafego aereo (acidentes, fatalidades..)")
+# Trazer a base de dados
 
-
-
-#iniciar a parametrização para os dados
-# Calculamos as diferenças
-df['Dif_Abertura_Máxima'] = df['Abertura'] - df['Máxima']
-df['Dif_Abertura_Mínima'] = df['Abertura'] - df['Mínima']
-df['Dif_Abertura_Fechamento'] = df['Abertura'] - df['Fechamento']
-
-# Fazemos o filtro
-filtro = ((df['Dif_Abertura_Máxima'].abs() >= 20) |
-          (df['Dif_Abertura_Mínima'].abs() >= 20) |
-          (df['Dif_Abertura_Fechamento'].abs() >= 20))
-
-# Aplicamos o filtro e obtemos as datas que atendem à condição
-horas_filtradas = df[filtro]['Hora']
-
-# Exibimos as datas
+df_data = pd.read_csv("airline-safety.csv")
 
 
-#somar no filtro, a quantidade de vezes que se repete a informação por horário
-# Aplicamos o filtro e obtemos as horas que atendem à condição
-horas_filtradas = df[filtro]['Hora']
+# Trazer as companhias em filtro
 
-# Contagem de ocorrências de cada hora
-contagem_horas = horas_filtradas.value_counts()
+selected_airline = st.sidebar.selectbox("Companhias Aéreas", df_data["airline"].unique())
 
-# Criamos uma nova coluna com a contagem
-df['Contagem_Horas'] = df['Hora'].map(contagem_horas)
+# Filtrar o DataFrame com base na companhia aérea selecionada
+df_filtered = df_data[df_data["airline"] == selected_airline]
 
+# Agora você pode usar df_filtered para visualizar os dados
+st.dataframe(df_filtered)
 
-# Fazemos um filtro na coluna 'VWAP D' usando a lista de horas filtradas
-filtro_vwap = df['Hora'].isin(horas_filtradas)
-
-# Aplicamos o filtro na coluna 'VWAP D' para obter os volumes correspondentes
-volumes_filtrados = df[filtro_vwap]['VWAP D']
-
-# Exibimos os volumes
-
-
-#Colocar em modo visual
-#Pegar os horários e colocar em modo visual gráfico de barras
+# Gráfico comparativo por empresa entre as duas décadas
 
 col1, col2 = st.columns(2)
-col3 = st.columns(1)
+col3, col4 = st.columns(2)
 
-fig_date = px.bar(df, x=("Contagem_Horas"), y=("Hora"), title= "Horários com maiores volatidades para estrategia de mais de 20 pontos")
-col1.plotly_chart(fig_date, use_container_width=True)
+fig = px.bar(df_filtered, x="fatalities_85_99",y="fatalities_00_14",orientation="h", title= "Comparativo de Fatalidades entre a decada de 90 e a decada de 2000")
 
-fig_vwap = px.bar(df, x="VWAP D", y=("Hora"), title= "Análise de volume por tempo")
-col2.plotly_chart(fig_vwap, use_container_width=True)
+fig.update_traces(marker_color="red")
+fig.update_xaxes(title="Fatalities 1985-1999")
+fig.update_yaxes(title="Fatalities 2000-2014")
 
 
+# segundo gráfico
+fig_prod = px.line(df_filtered, x="incidents_85_99", y= "incidents_00_14", title="Incidentes que aconteceram sem morte")
+
+# Exibir o gráfico
+st.write(fig)
+st.write(fig_prod)
